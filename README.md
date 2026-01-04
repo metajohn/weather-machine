@@ -9,9 +9,9 @@ A real-time synchronization project bridging a Python-based data pipeline with 3
 - **Visualization:** Unreal Engine 5 interactive dashboard with real-time material and lighting response.
 
 ## Key Features
-- **IT-Centric Monitoring:** Visualizes network health, temperature, and status pings.
+- **Diegetic Data:** Visualizes data in a visceral human way.
 - **Automated Workflow:** Uses Python to handle "data plumbing" without manual entry.
-- **No-Math Rendering:** Leverages Unreal's Blueprints for data-driven environment updates.
+- **Unreal Intregration:** Leverages Unreal's Blueprints for data-driven environment updates.
 
 ## Setup & Usage
 1. Initialize the Python virtual environment.
