@@ -1,17 +1,14 @@
 # Secrets
-dtwin/.env
 .env
-dtwin/env/
+env/
 
 # Python
-**/__pycache__/
-**/*.py[cod]
+__pycache__/
+*.py[cod]
 venv/
-dwtin/.venv/
 .venv/
 
 # Database
-dwtin/*.db
 *.db
 
 # Unreal Engine
@@ -21,7 +18,5 @@ DerivedDataCache/
 Intermediate/
 Saved/
 .vscode/
-.vs/
-FileOpenOrder/
 *.sln
 *.pdb
