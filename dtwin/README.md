@@ -16,6 +16,8 @@ A real-time synchronization project bridging a Python-based data pipeline with 3
 *Currently in Development*
 ## Development Roadmap
 - [x] Initial Project Architecture & Repository Setup
-- [x] Phase 1: Python SQLite Ingestion Script
-- [ ] Phase 2: REST API Bridge (Flask/FastAPI)
-- [ ] Phase 3: Unreal Engine Data-Binding
+- [x] Python SQLite Ingestion Script
+- [ ] Fake Data Injector
+- [ ] Unreal Engine Data-Visuallization
+## Long Term Goals
+- [ ] Design Standalone App to understand data requirements
