@@ -11,7 +11,7 @@ dwtin/.venv/
 .venv/
 
 # Database
-dwtin/*.db
+dtwin/*.db
 *.db
 
 # Unreal Engine
@@ -25,3 +25,8 @@ Saved/
 FileOpenOrder/
 *.sln
 *.pdb
+*HLOD*
+
+#OS 
+.DS_Store
+Thumbs.db
