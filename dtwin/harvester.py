@@ -62,7 +62,7 @@ def init_db():
             description TEXT
         )
     ''')
-    #Set the user version to the db itself
+    #Set the current schema version for the db
     cursor.execute(f"PRAGMA user_version = {CURRENT_SCHEMA_VERSION}")
 
     #save db
