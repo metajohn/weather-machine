@@ -17,7 +17,6 @@ A real-time synchronization project bridging a Python-based data pipeline with 3
 ## Development Roadmap
 - [x] Initial Project Architecture & Repository Setup
 - [x] Python SQLite Ingestion Script
-- [ ] Fake Data Injector
-- [ ] Unreal Engine Data-Visuallization
-## Long Term Goals
-- [ ] Design Standalone App to understand data requirements
+- [x] Fake Data Injector
+- [x] Unreal Engine Data-Visuallization
+- [ ] Design complete visualization goals to understand data requirements
