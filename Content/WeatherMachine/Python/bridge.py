@@ -58,7 +58,7 @@ if 'BRIDGE_TICK_HANDLE' not in globals():
     BRIDGE_TICK_HANDLE = None
 
 last_update_time = 0
-update_interval = 10.0 #10 seconds
+update_interval = 2.0 #10 seconds
 
 def tick_callback(delta_time):
     global last_update_time

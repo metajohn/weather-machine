@@ -14,6 +14,11 @@ LON = -122.34928075550654
 #Create the url from the relevant parts, currently latitude, longitude, and the api key
 URL = f"https://api.openweathermap.org/data/2.5/weather?lat={LAT}&lon={LON}&appid={API_KEY}&units=metric"
 
+# This finds the directory where THIS script is saved
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# This creates an absolute path to the database in that same folder
+DB_PATH = os.path.join(BASE_DIR, "weather_data.db")
+
 SLEEPTIME_SECONDS = 600
 
 #---------DEFINITION----------
