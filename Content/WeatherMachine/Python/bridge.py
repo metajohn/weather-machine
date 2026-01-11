@@ -1,11 +1,8 @@
 import unreal
 import sqlite3
 import os
-import time
-from datetime import datetime
 
-#Store the last db entry timestamp to make sure we are not triggering the BP to update everytime
-last_processed_timestamp = None
+last_processed_id = None
 
 def get_data_from_db():
     #Path to db
@@ -16,7 +13,7 @@ def get_data_from_db():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         #Get last entry from db (most recet weather)
-        cursor.execute("""SELECT * FROM seattle_weather ORDER BY timestamp DESC LIMIT 1""")
+        cursor.execute("""SELECT * FROM weather_event ORDER BY CAST(id AS INTEGER) DESC LIMIT 1""")
         row = cursor.fetchone()
         conn.close()
         return row
@@ -25,65 +22,38 @@ def get_data_from_db():
         return None
 
 def run_sync():
-    global last_processed_timestamp
+    global last_processed_id
 
     data = get_data_from_db()
     if not data:
         return
     
-    #time
-    time_now = data['timestamp']
+    current_id = data['id']
 
     #Only update if the data is new
-    if time_now == last_processed_timestamp:
-        unreal.log("Bridge: run_sync: found the same timestamp as the last timestamp and does nothing")
+    if current_id == last_processed_id:
+        unreal.log("Bridge: run_sync: found the same id as the last id and is waiting for a new id")
         return
 
-    #suntime
-    time_sunrise = data['sunrise_time']
-    time_sunset = data['sunset_time']
-
-    #weather
-    temperature = data['temp_c']
+    last_processed_id = current_id
+    #data
+    time_event = data['time_event']
+    location_name = data['location_name']
+    time_iso = data['time_iso']
+    sun_alpha = data['sun_alpha']
+    temp_c = data['temp_c']
     humidity = data['humidity']
     visibility = data['visibility']
-    wind_deg = data['wind_deg']
-    wind_speed = data['wind_speed_ms']
-    clouds = data['clouds']
-    rain_hour = data['rain_1h']
-    snow_hour = data['snow_1h']
+    clouds_percent = data['clouds_percent']
+    wind_speed = data['wind_speed']
+    wind_x = data['wind_x']
+    wind_y = data['wind_y']
     desc = data['description']
-    
-    last_processed_timestamp = time_now
+    weather_state_id = data['weather_state_id']
+    rain_1h = data['rain_1h']
+    snow_1h = data['snow_1h']
 
-    # Parse the time strings into datetime objects
-    # Format '%Y-%m-%d %H:%M:%S' matches the SQLite CURRENT_TIMESTAMP format
-    fmt = '%Y-%m-%d %H:%M:%S'
-    fmt_short = '%H:%M'
-
-    try:
-        time_now = datetime.strptime(time_now, fmt)
-        time_sunrise = datetime.strptime(time_sunrise, fmt_short)
-        time_sunset = datetime.strptime(time_sunset, fmt_short)
-
-        time_sunrise = time_sunrise.replace(year=time_now.year, month=time_now.month, day=time_now.day)
-        time_sunset = time_sunset.replace(year=time_now.year, month=time_now.month, day=time_now.day)
-
-        time_now = time_now.timestamp()
-        time_sunrise = time_sunrise.timestamp()
-        time_sunset = time_sunset.timestamp()
-
-        #Calculate Sun position based on time (Now - Start) / (End - Start)
-        day_duration = time_sunset - time_sunrise
-        if day_duration > 0:
-            sun_alpha = (time_now - time_sunrise) / day_duration
-        else:
-            sun_alpha = -1.0 #Error fallback
-
-    except Exception as e:
-        unreal.log_error(f"Bridge: Time Parsing Error: {e}")
-
-
+    last_processed_timestamp = time_event
 
     #Find actor by class
     subsystem = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
@@ -94,17 +64,21 @@ def run_sync():
 
     if all_actors:
         w_machine = all_actors[0]
-        w_machine.set_editor_property("CurrentTemperature", float(temperature))
-        w_machine.set_editor_property("Humidity", float(humidity))
-        w_machine.set_editor_property("WindSpeed", float(wind_speed))
-        w_machine.set_editor_property("WindDirection", int(wind_deg))
-        w_machine.set_editor_property("Clouds", int(clouds))
-        w_machine.set_editor_property("Visibility", float(visibility))
-        w_machine.set_editor_property("Rain", float(rain_hour))
-        w_machine.set_editor_property("Snow", float(snow_hour))
-        w_machine.set_editor_property("WeatherDescription", str(desc))
+        w_machine.set_editor_property("Location", location_name)
+        w_machine.set_editor_property("DisplayTime", time_iso)
         w_machine.set_editor_property("SunAlpha", float(sun_alpha))
-        unreal.log(f"Bridge: Injected LIVE data: time:{time_now}, sun_alpha:{sun_alpha}, {temperature}C, {desc}, humidity:{humidity}, wind_speed:{wind_speed}, wind_direction:{wind_deg}, clouds:{clouds}, visibility:{visibility}, rain:{rain_hour}, snow:{snow_hour}")
+        w_machine.set_editor_property("CurrentTemperature", float(temp_c))
+        w_machine.set_editor_property("Humidity", float(humidity))
+        w_machine.set_editor_property("Visibility", float(visibility))
+        w_machine.set_editor_property("CloudsPercent", int(clouds_percent))
+        w_machine.set_editor_property("WindSpeed", float(wind_speed))
+        w_machine.set_editor_property("WindX", float(wind_x))
+        w_machine.set_editor_property("WindY", float(wind_y))
+        w_machine.set_editor_property("WeatherDescription", desc)
+        w_machine.set_editor_property("RainHour", float(rain_1h))
+        w_machine.set_editor_property("SnowHour", float(snow_1h))
+        w_machine.set_editor_property("WeatherState", int(weather_state_id))
+        unreal.log(f"Bridge: Injected LIVE data: time:{time_iso}, sun_alpha:{sun_alpha}, {temp_c}C, {desc}, humidity:{humidity}, wind_speed:{wind_speed}, wind_x/y:{wind_x}/{wind_y}, clouds:{clouds_percent}, visibility:{visibility}, rain:{rain_1h}, snow:{snow_1h}")
         w_machine.call_method("UpdateWeatherDisplay")
     else:
         unreal.log_error("Bridge: Could not find BP_WeatherMachine in the level")
