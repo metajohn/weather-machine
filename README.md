@@ -19,4 +19,6 @@ A real-time synchronization project bridging a Python-based data pipeline with 3
 - [x] Python SQLite Ingestion Script
 - [x] Fake Data Injector
 - [x] Unreal Engine Data-Visuallization
-- [ ] Design complete visualization goals to understand data requirements
+- [x] Design complete visualization goals to understand data requirements
+- [ ] Implement Json handshake for historical data viewing
+- [ ] Implement Weather State change
