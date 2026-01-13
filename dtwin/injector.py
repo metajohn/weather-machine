@@ -34,8 +34,8 @@ def inject_weather():
     weather_machine = EnvironmentManager(0)
     
     step = 0
-    steps_in_seconds = 60
-    tick_rate = 0.1
+    steps_in_seconds = 3600
+    tick_rate = 10
     while True:
         #to prevent problems with SunAlpha at midnight we have to adjust the times of sunrise and sunset
         #if we've hit the new day
@@ -92,9 +92,10 @@ def inject_weather():
                 description,
                 weather_state_id, 
                 rain_1h, 
-                snow_1h
+                snow_1h,
+                update_interval_time
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             "Simulated Seattle", 
             float(sim_now_unix), 
@@ -111,7 +112,8 @@ def inject_weather():
             desc,
             int(weather_state), 
             float(rain_val), 
-            0.0
+            0.0,
+            tick_rate
         ))
         
         conn.commit()

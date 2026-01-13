@@ -28,7 +28,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "weather_data.db")
 
 SLEEPTIME_SECONDS = 600
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 
 def init_db():
     #Will return True if the database already exists
@@ -82,7 +82,9 @@ def init_db():
         description TEXT,           -- String for logs/debugging
         weather_state_id INTEGER,  -- 0=Clear, 1=Cloudy, 2=Rain, 3=Snow, 4=Storm
         rain_1h REAL,
-        snow_1h REAL
+        snow_1h REAL,
+                   
+        update_interval_time REAL         --used for updating
     )
     ''')
     #Set the current schema version for the db
@@ -155,10 +157,11 @@ def harvest_once():
         description,
         weather_state_id,
         rain_1h,
-        snow_1h
+        snow_1h,
+        update_interval_time
         )
 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         '''
         data = (
             location_name,
@@ -176,7 +179,8 @@ def harvest_once():
             desc,
             int(weather_state),
             float(rain_hour),
-            float(snow_hour)
+            float(snow_hour),
+            SLEEPTIME_SECONDS
             )
         #the above variables can now be easily applied to the db
         cursor.execute(sql_fields, data)
