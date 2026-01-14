@@ -9,10 +9,12 @@ import requests
 from dotenv import load_dotenv
 import sqlite3
 import time
-from datetime import datetime, timezone
-from weather_machine import EnvironmentManager
+import json
+from weather_machine import EnvironmentManager, WeatherPacket
+from utililties import insert_dataclass_to_db
 
 #----------SETUP---------
+#API
 #load the .env as an environment variable
 load_dotenv()
 API_KEY = os.getenv("OPENWEATHER_API_KEY")
@@ -21,13 +23,13 @@ LAT = 47.62050853108323
 LON = -122.34928075550654
 #Create the url from the relevant parts, currently latitude, longitude, and the api key
 URL = f"https://api.openweathermap.org/data/2.5/weather?lat={LAT}&lon={LON}&appid={API_KEY}&units=metric"
+SLEEPTIME_SECONDS = 600
 
+#DB
 # This finds the directory where THIS script is saved
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # This creates an absolute path to the database in that same folder
 DB_PATH = os.path.join(BASE_DIR, "weather_data.db")
-
-SLEEPTIME_SECONDS = 600
 CURRENT_SCHEMA_VERSION = 4
 
 def init_db():
@@ -35,24 +37,24 @@ def init_db():
     db_already_exists = os.path.exists(DB_PATH)
 
     #This will create a db even if one does not exist
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    sql_conn = sqlite3.connect(DB_PATH)
+    cursor = sql_conn.cursor()
     cursor.execute("PRAGMA user_version")
     existing_version = cursor.fetchone()[0]
     
     #If the db version is less than the current version declared as a global above, delete and rebuild
     if db_already_exists and existing_version < CURRENT_SCHEMA_VERSION:
         print(f"Schema mismatch (v{existing_version} vs v{CURRENT_SCHEMA_VERSION}). Rebuilding database...")
-        conn.close()
+        sql_conn.close()
         os.remove(DB_PATH)
-        conn = sqlite3.connect(DB_PATH)
+        sql_conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
     #if the db did not exist when we first checked, do nothing
     elif not db_already_exists:
         print("No database found. Creating fresh schema...")
 
-#   #Creates table for seattle weather
+    #Creates table for seattle weather
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS weather_event (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,113 +93,75 @@ def init_db():
     cursor.execute(f"PRAGMA user_version = {CURRENT_SCHEMA_VERSION}")
 
     #save db
-    conn.commit()
+    sql_conn.commit()
     #close db
-    conn.close()
+    sql_conn.close()
     print(f"Database read (Version {CURRENT_SCHEMA_VERSION})")
 
 def harvest_once():
+    #harvest once gets the api data, sends it to the db AND pipes it to the bridge, seems like way too much
     response = requests.get(URL, timeout=10)
     if response.status_code == 200:
         data = response.json()
 
+        wp = WeatherPacket()
         #Extraction of data from OpenWeather API
-        location_name = data['name']
-        collection_time = data['dt']
-        tz_offset = data['timezone']
-        time_sunrise = data['sys']['sunrise']
-        time_sunset = data['sys']['sunset']
-        temp = data['main']['temp']
-        humid = data ['main']['humidity']
-        visibility = data['visibility']
-        wind_direction = data['wind']['deg']
-        wind_speed = data['wind']['speed']
-        clouds_percent = data['clouds']['all']
-        desc = data['weather'][0]['description']
-        rain_hour = data.get('rain', {}).get('1h', 0.0)
-        snow_hour = data.get('snow', {}).get('1h', 0.0)
-        weather_id = data['weather'][0]['id']
+        wp.location_name = data['name']
+        wp.time_event = data['dt']
+        wp.timezone_offset = data['timezone']
+        wp.temp_c = data['main']['temp']
+        wp.humidity = data ['main']['humidity']
+        wp.visibility = data['visibility']
+        wp.wind_speed = data['wind']['speed']
+        wp.clouds_percent = data['clouds']['all']
+        wp.description = data['weather'][0]['description']
+        wp.rain_1h = data.get('rain', {}).get('1h', 0.0)
+        wp.snow_1h = data.get('snow', {}).get('1h', 0.0)
+        wp.weather_state_id = data['weather'][0]['id']
+
 
         #Initialize Environment Manager with timezone
-        weather_machine = EnvironmentManager(tz_offset)
-        sun_alpha = weather_machine.calculate_sun_alpha(
-            collection_time,
-            time_sunrise,
-            time_sunset
+        weather_machine = EnvironmentManager(wp.timezone_offset)
+        wp.sun_alpha = weather_machine.calculate_sun_alpha(
+            wp.time_event,
+            data['sys']['sunrise'],
+            data['sys']['sunset']
         )
 
-        wind_x, wind_y = weather_machine.get_wind_vector(
-            wind_direction,
-            wind_speed
+        wp.wind_x, wp.wind_y = weather_machine.get_wind_vector(
+            data['wind']['deg'],
+            wp.wind_speed
         )
 
-        time_iso = weather_machine.get_iso_time(collection_time)
-        weather_state = weather_machine.map_weather_state(weather_id)
+        wp.time_iso = weather_machine.get_iso_time(wp.time_event)
+        wp.weather_state_id = weather_machine.map_weather_state(wp.weather_state_id)
+        wp.update_interval_time = SLEEPTIME_SECONDS
 
         #Connection to local database
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
+        sql_conn = sqlite3.connect(DB_PATH)
+        cursor = sql_conn.cursor()
 
-        #Format the data for the db
-        sql_fields = '''
-        INSERT INTO weather_event (
+        insert_dataclass_to_db(cursor, "weather_event", wp)
+        sql_conn.commit()
+        sql_conn.close()
 
-        location_name,
-        time_event,
-        time_iso,
-        timezone_offset,
-        sun_alpha,
-        temp_c,
-        humidity,
-        visibility,
-        clouds_percent,
-        wind_speed,
-        wind_x,
-        wind_y,
-        description,
-        weather_state_id,
-        rain_1h,
-        snow_1h,
-        update_interval_time
-        )
-
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        '''
-        data = (
-            location_name,
-            collection_time,
-            time_iso,
-            int(tz_offset),
-            float(sun_alpha),
-            float(temp),
-            int(humid), 
-            int(visibility), 
-            int(clouds_percent),
-            float(wind_speed),
-            float(wind_x),
-            float(wind_y),
-            desc,
-            int(weather_state),
-            float(rain_hour),
-            float(snow_hour),
-            SLEEPTIME_SECONDS
-            )
-        #the above variables can now be easily applied to the db
-        cursor.execute(sql_fields, data)
-        conn.commit()
-        conn.close()
+        temp_json = "live_weather.tmp"
+        final_json = "live_weather.json"
+        with open(temp_json, "w") as f:
+            json.dump(wp.to_dict(), f, indent=4)
+        os.replace(temp_json, final_json)
 
         #display the weather for the console
         print("Weather recorded in Database {time_iso}")
         print(f"""
-    Location: {location_name}
-    Condition: {desc} (ID: {weather_state})
-    Sun Alpha: {sun_alpha}
-    Temp/Humid: {temp}°C / {humid}%
-    Wind Speed/Direction: {wind_speed}ms / X:{wind_x} / Y:{wind_y}
-    Clouds/Vis: {clouds_percent}% / {visibility} meters
-    Rain in 1 hour: {rain_hour}
-    Snow in 1 hour: {snow_hour}
+    Location: {wp.location_name}
+    Condition: {wp.description} (ID: {wp.weather_state_id})
+    Sun Alpha: {wp.sun_alpha}
+    Temp/Humid: {wp.temp_c}°C / {wp.humidity}%
+    Wind Speed/Direction: {wp.wind_speed}ms / X:{wp.wind_x} / Y:{wp.wind_y}
+    Clouds/Vis: {wp.clouds_percent}% / {wp.visibility} meters
+    Rain in 1 hour: {wp.rain_1h}
+    Snow in 1 hour: {wp.snow_1h}
     ------------------------------------------------------
     """)
     else:
@@ -205,9 +169,9 @@ def harvest_once():
         print(f"Status: {response.status_code}")
         print(f"Message: {response.text}")
 
+
 def main():
     init_db()
-
     while True:
         try: 
             harvest_once()
@@ -221,7 +185,6 @@ def main():
         display_sleeptime_minutes = actual_sleep / 60
         print(f"sleeping for {display_sleeptime_minutes:.0f} mintues...")
         time.sleep(actual_sleep)
-
 
 #---------EXECUTION---------
 if __name__ == "__main__":

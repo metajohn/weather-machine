@@ -16,6 +16,8 @@ dtwin/*.db
 
 #dynamic Json
 weather_data.json
+live_weather.json
+unrea_control.json
 
 # Unreal Engine
 Binaries/

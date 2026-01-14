@@ -1,5 +1,29 @@
 import math
 from datetime import datetime, timezone, timedelta
+from dataclasses import dataclass, asdict
+
+@dataclass
+class WeatherPacket:
+    location_name: str = "Unknown"
+    time_event: float = 0.0
+    time_iso: str = ""
+    timezone_offset: int = 0
+    sun_alpha: float = 0.0
+    temp_c: float = 0.0
+    humidity: int = 0
+    visibility: int = 0
+    clouds_percent: int = 0
+    wind_speed: float = 0.0
+    wind_x: float = 0.0
+    wind_y: float = 0.0
+    description: str = "Unknown"
+    weather_state_id: int = 0
+    rain_1h: float = 0.0
+    snow_1h: float = 0.0
+    update_interval_time: float = 0.0
+
+    def to_dict(self):
+        return asdict(self)
 
 class EnvironmentManager:
     def __init__(self, utc_offset_seconds):
