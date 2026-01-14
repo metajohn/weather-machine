@@ -20,5 +20,8 @@ A real-time synchronization project bridging a Python-based data pipeline with 3
 - [x] Fake Data Injector
 - [x] Unreal Engine Data-Visuallization
 - [x] Design complete visualization goals to understand data requirements
+- [ ] Design / Implement Unreal UX for controlling historical data
 - [ ] Implement Json handshake for historical data viewing
+- [ ] Replace basic curve controllers with cosine/sin based waves
 - [ ] Implement Weather State change
+- [ ] Add Mt. Rainier
