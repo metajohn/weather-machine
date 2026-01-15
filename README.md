@@ -40,11 +40,11 @@ Centralized all environmental math into a unified WeatherPacket dataclass. This 
 - [x] Design complete visualization goals to understand data requirements
 - [x] Design / Implement Unreal UX for controlling historical data
 - [x] Implement Json handshake for historical data viewing
-- [ ] Implement historical data viewing
-- [ ] Fix bugs with unreal json controller
+- [x] Implement historical data viewing
+- [x] Fix bugs with unreal json controller
 - [ ] Replace basic curve controllers with cosine/sin based waves
 - [ ] Implement Weather State change
-- [ ] Add Mt. Rainier
+- [ ] Add Mt. Rainier and other environment details
 
 ## Tech Stack
 
