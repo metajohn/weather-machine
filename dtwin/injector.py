@@ -4,7 +4,7 @@ import math
 import os
 import json
 from weather_machine import EnvironmentManager, WeatherPacket
-from utililties import insert_dataclass_to_db, safe_atomic_replace
+from weather_util import insert_dataclass_to_db, safe_atomic_replace
 
 
 # This finds the directory where THIS script is saved
@@ -20,6 +20,9 @@ def run_injector():
     #floor division multiplied by the unit to get the midnight of today in unix seconds
     sim_now_unix = (time.time() // 86400) * 86400
     #Steps are added at the loop end to advance the time
+
+    print("--- Fake Data Injector Started ---")
+    print("Simulating a 24-hour temperature cycle...")
 
     weather_machine = EnvironmentManager(0)
 
@@ -39,7 +42,7 @@ def run_injector():
         temp_json = "live_weather.tmp"
         final_json = "live_weather.json"
         
-        safe_atomic_replace(wp.to_dict(), temp_json, final_json)
+        safe_atomic_replace(wp.to_dict(), final_json)
 
         print(f"[{wp.time_iso}] Data sent.")
         step += 0.1  # Makes the weather change faster
@@ -47,9 +50,6 @@ def run_injector():
         time.sleep(tick_rate) # Updates the DB every 10 seconds
 
 def inject_weather_step(step, sim_now_unix, tick_rate, weather_machine):
-
-    print("--- Fake Data Injector Started ---")
-    print("Simulating a 24-hour temperature cycle...")
     
     wp = WeatherPacket()
     midnight_today_unix = (sim_now_unix // 86400) * 86400

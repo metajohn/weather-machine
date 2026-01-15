@@ -12,11 +12,17 @@ from watchdog.events import FileSystemEventHandler
 current_dir = os.path.dirname(os.path.abspath(__file__))
 dtwin_path = os.path.join(current_dir, 'dtwin')
 
-# Add it to Python's search list
 if dtwin_path not in sys.path:
-    sys.path.append(dtwin_path)
+    sys.path.insert(0, dtwin_path)
 
-from weather_machine import WeatherPacket
+# Try importing again with the new name
+try:
+    from weather_util import safe_atomic_replace
+    from weather_machine import WeatherPacket
+    print("Bridge: Successfully imported weather_util!")
+except ImportError as e:
+    print(f"Bridge: Import failed! Error: {e}")
+    print(f"Bridge: Looked in {dtwin_path}")
 
 #Structure
 # Pipe the data in AND have a watchdog running
@@ -43,8 +49,17 @@ except:
 
 #watchdog for catching commands from unreal written to unreal_control.json
 class UnrealControlHandler(FileSystemEventHandler):
-    global current_id, current_mode, live_data, is_live
+    def __init__(self):
+        self.last_processed_time = 0
+        self.cooldown = 0.5
+
     def on_modified(self, event):
+        global live_data, is_live
+        #debounce to avoid the doubletap from unreal writing json doubletap
+        if (time.time() - self.last_processed_time) < self.cooldown:
+            return
+        self.last_processed_time = time.time()
+
         #make sure its the control file changing (NOT weather_data)
         if os.path.normpath(event.src_path) == os.path.normpath(CONTROL_PATH):
             print("unreal has edited the state json")
@@ -57,12 +72,13 @@ class UnrealControlHandler(FileSystemEventHandler):
                 return
                 #read json
             if is_live == True:
-                global live_data
                 #resume and set unreal up with the newest data
                 if(live_data):
                     #this is a json with all of the correct data including max_id and current_id
                     write_to_unreal(live_data)
-                #if we do not have any live data, the api updates every ten minutes so its probably faster to just go get it
+                #if we do not have any live data
+                #the api updates every ten minutes 
+                #so go get it from the db
                 else:
                     #this is a dict with the max_id and current_id added within the function
                     live_data = read_live_data_from_db()
@@ -93,7 +109,7 @@ class WeatherUpdateHandler(FileSystemEventHandler):
                 pass
 
 def read_live_data_from_db():
-    
+    global is_live
     #Path to db
     db_path = os.path.join(ROOT_DIR, "dtwin", "weather_data.db")
     try:
@@ -118,13 +134,15 @@ def read_live_data_from_db():
         return None
 
 def write_to_unreal(data):
-    fd, temp_path = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+    global is_live
 
     #data
     #many of these are not used currently
+    current_id = data['current_id']
     if is_live == True:
         max_id = data['max_id']
-    current_id = data['current_id']
+    else:
+        max_id = current_id
     time_event = data['time_event']
     location_name = data['location_name']
     time_iso = data['time_iso']
@@ -154,16 +172,9 @@ def write_to_unreal(data):
         "timestamp_unix" : time_event,
         "update_interval_time": update_interval_time
     }
-    try:
-        with os.fdopen(fd, 'w') as f:
-            json.dump(json_data, f, indent=4)
 
-        os.replace(temp_path, DATA_PATH)
+    safe_atomic_replace(json_data, DATA_PATH)
 
-    except Exception as e:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-        print(f"CRITICAL: Failed to write weather data: {e}")
 
 def read_historic_from_db(target_id):
     global current_id

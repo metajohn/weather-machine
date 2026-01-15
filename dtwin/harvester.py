@@ -11,7 +11,7 @@ import sqlite3
 import time
 import json
 from weather_machine import EnvironmentManager, WeatherPacket
-from utililties import insert_dataclass_to_db, safe_atomic_replace
+from weather_util import insert_dataclass_to_db, safe_atomic_replace
 
 #----------SETUP---------
 #API
@@ -153,7 +153,7 @@ def harvest_once():
 
         temp_json = "live_weather.tmp"
         final_json = "live_weather.json"
-        safe_atomic_replace(wp.to_dict(), temp_json, final_json)
+        safe_atomic_replace(wp.to_dict(), final_json)
 
         #display the weather for the console
         print("Weather recorded in Database {time_iso}")

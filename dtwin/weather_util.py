@@ -26,15 +26,27 @@ def insert_dataclass_to_db(cursor, table_name, data_instance):
     #execute
     cursor.execute(sql, values)
 
-def safe_atomic_replace(data, temp_path, final_path, retries=5):
+def safe_atomic_replace(data, final_path, retries=5):
+    
+    temp_path = final_path + ".tmp"
+
     for i in range(retries):
         try:
             with open(temp_path, "w") as f:
                 json.dump(data, f, indent=4)
+
             os.replace(temp_path, final_path)
             return True
-        except PermissionError:
+        except Exception as e:
             # File is likely being read by the Bridge
-            time.sleep(0.05) 
+            time.sleep(0.1) 
+            print(f"Unexpected error during atomic replace: {e}")
+            break
+    if os.path.exists(temp_path):
+        try:
+            os.remove(temp_path)
+        except:
+            pass
+        
     print(f"FAILED to replace {final_path} after {retries} attempts.")
     return False
