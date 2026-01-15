@@ -11,7 +11,7 @@ import sqlite3
 import time
 import json
 from weather_machine import EnvironmentManager, WeatherPacket
-from utililties import insert_dataclass_to_db
+from utililties import insert_dataclass_to_db, safe_atomic_replace
 
 #----------SETUP---------
 #API
@@ -141,15 +141,19 @@ def harvest_once():
         sql_conn = sqlite3.connect(DB_PATH)
         cursor = sql_conn.cursor()
 
+        #insert data to db
         insert_dataclass_to_db(cursor, "weather_event", wp)
+        #get MaxID for Unreal
+        cursor.execute("SELECT MAX(id) FROM weather_table")
+        wp.max_id = cursor.fetchone()[0] or 0
+        wp.current_id = wp.max_id
+
         sql_conn.commit()
         sql_conn.close()
 
         temp_json = "live_weather.tmp"
         final_json = "live_weather.json"
-        with open(temp_json, "w") as f:
-            json.dump(wp.to_dict(), f, indent=4)
-        os.replace(temp_json, final_json)
+        safe_atomic_replace(wp.to_dict(), temp_json, final_json)
 
         #display the weather for the console
         print("Weather recorded in Database {time_iso}")

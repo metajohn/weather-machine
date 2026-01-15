@@ -4,6 +4,8 @@ from dataclasses import dataclass, asdict
 
 @dataclass
 class WeatherPacket:
+    current_id: int = 0
+    max_id: int = 0
     location_name: str = "Unknown"
     time_event: float = 0.0
     time_iso: str = ""

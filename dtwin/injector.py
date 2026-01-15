@@ -4,7 +4,7 @@ import math
 import os
 import json
 from weather_machine import EnvironmentManager, WeatherPacket
-from utililties import insert_dataclass_to_db
+from utililties import insert_dataclass_to_db, safe_atomic_replace
 
 
 # This finds the directory where THIS script is saved
@@ -30,8 +30,17 @@ def run_injector():
         wp = inject_weather_step(step, sim_now_unix, tick_rate, weather_machine)
         insert_dataclass_to_db(cursor, "weather_event", wp)
         sql_conn.commit()
-        with open("live_weather.json", "w") as f:
-            json.dump(wp.to_dict(), f, indent=4)
+        
+        #get MaxID for Unreal
+        cursor.execute("SELECT MAX(id) FROM weather_event")
+        wp.max_id = cursor.fetchone()[0] or 0
+        wp.current_id = wp.max_id
+
+        temp_json = "live_weather.tmp"
+        final_json = "live_weather.json"
+        
+        safe_atomic_replace(wp.to_dict(), temp_json, final_json)
+
         print(f"[{wp.time_iso}] Data sent.")
         step += 0.1  # Makes the weather change faster
         sim_now_unix += steps_in_seconds 
