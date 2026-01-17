@@ -10,8 +10,7 @@ from dotenv import load_dotenv
 import sqlite3
 import time
 import json
-from weather_machine import EnvironmentManager, WeatherPacket
-from weather_util import insert_dataclass_to_db, safe_atomic_replace
+from weather_util import EnvironmentManager, WeatherPacket, insert_dataclass_to_db, safe_atomic_replace
 
 #----------SETUP---------
 #API

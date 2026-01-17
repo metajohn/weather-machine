@@ -17,8 +17,7 @@ if dtwin_path not in sys.path:
 
 # Try importing again with the new name
 try:
-    from weather_util import safe_atomic_replace
-    from weather_machine import WeatherPacket
+    from weather_util import safe_atomic_replace, WeatherPacket
     print("Bridge: Successfully imported weather_util!")
 except ImportError as e:
     print(f"Bridge: Import failed! Error: {e}")

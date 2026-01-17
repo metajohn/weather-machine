@@ -3,8 +3,7 @@ import time
 import math
 import os
 import json
-from weather_machine import EnvironmentManager, WeatherPacket
-from weather_util import insert_dataclass_to_db, safe_atomic_replace
+from weather_util import EnvironmentManager, WeatherPacket, insert_dataclass_to_db, safe_atomic_replace
 
 
 # This finds the directory where THIS script is saved
