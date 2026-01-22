@@ -1,0 +1,22 @@
+{
+    "is_live": false,
+    "current_id": 110,
+    "max_id": 151,
+    "location_name": "Simulated Seattle",
+    "time_event": 1769439600.0,
+    "time_iso": "2026-01-26T07:00:00-08:00",
+    "timezone_offset": -28800,
+    "sun_alpha": 0.8,
+    "temp_c": 6.41,
+    "humidity": 75,
+    "visibility": 10000,
+    "clouds_percent": 20,
+    "wind_speed": 3.57,
+    "wind_x": -0.864,
+    "wind_y": 3.464,
+    "description": "Light Rain",
+    "weather_state_id": 2,
+    "rain_1h": 5.5,
+    "snow_1h": 0.0,
+    "update_interval_time": 10.0
+}

@@ -42,13 +42,19 @@ Centralized all environmental math into a unified WeatherPacket dataclass. This 
 - [x] Implement Json handshake for historical data viewing
 - [x] Implement historical data viewing
 - [x] Fix bugs with unreal json controller
+- [ ] Refactor Bridge architecture
+- [ ] Implement Health Check Utility
 - [ ] Replace basic curve controllers with cosine/sin based waves
 - [ ] Implement Weather State change
 - [ ] Add Mt. Rainier and other environment details
 
+##Long Term Development
+- [ ] Refactor json connection into TCP communication
+- [ ] Server deployment
+
 ## Tech Stack
 
-Engine: Unreal Engine 5 (Blueprints, Enhanced Input)
+Engine: Unreal Engine 5 (Blueprints, Input)
 Language: Python 3.13 (Dataclasses, Watchdog, SQLite3)
 Database: SQLite (Time-series optimization)
 Data Format: JSON (Atomic I/O)
