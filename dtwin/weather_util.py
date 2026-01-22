@@ -232,7 +232,7 @@ class WeatherRepository:
         self.atomic_save_json(heartbeat_time, file_path, file_name)
 
 class WeatherEngine:
-    def __init__(self, repo, task_function, interval=600):
+    def __init__(self, repo, task_function, interval=600, heartbeat_filepath="", heartbeat_filename="" ):
         self.repo = repo
         self.task_function = task_function
         self.interval = interval
@@ -248,7 +248,7 @@ class WeatherEngine:
                 self.repo.save_packet_to_db(packet)
                 print(f"[{packet.time_iso}] Saved: {packet.time_iso} to {self.repo.table_name}")
 
-                # self.repo.update_heartbeat()
+                self.repo.heartbeat()
 
                 time.sleep(self.interval)
             except Exception as e:
