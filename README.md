@@ -26,10 +26,10 @@ Developed a History-Lock protocol. When a user "scrubs" through time in the Unre
 
     1. Unreal sets a Desired_ID.
     2. The Bridge locks the state and fetches the specific database record.
-    3. Unreal confirms the Current_ID matches the Desired_ID before releasing the lock. This prevents "Ping Storms" and ensures the UI and Database are perfectly synced.
+    3. Unreal confirms the Current_ID matches the Desired_ID before releasing the lock. This allows for a responsive UI without harassing the db
 
 - **Modular Data Normalization**
-Centralized all environmental math into a unified WeatherPacket dataclass. This ensures that Live data (from the harvester) and Historical data (from the DB) are mathematically identical before hitting the 3D renderer.
+Centralized all environmental variables into a unified WeatherPacket dataclass. This ensures a coherent, "single source of truth" that follows a consistent path.
 
 *Currently in Development*
 ## Development Roadmap
