@@ -42,22 +42,22 @@ Centralized all environmental variables into a unified WeatherPacket dataclass. 
 - [x] Implement Json handshake for historical data viewing
 - [x] Implement historical data viewing
 - [x] Fix bugs with unreal json controller
-- [ ] Refactor Bridge architecture
+- [x] Refactor Bridge architecture
 - [ ] Implement Health Check Utility
 - [ ] Replace basic curve controllers with cosine/sin based waves
 - [ ] Implement Weather State change
 - [ ] Add Mt. Rainier and other environment details
 
-##Long Term Development
+### Networked Development
 - [ ] Refactor json connection into TCP communication
 - [ ] Server deployment
 
 ## Tech Stack
 
-Engine: Unreal Engine 5 (Blueprints, Input)
-Language: Python 3.13 (Dataclasses, Watchdog, SQLite3)
-Database: SQLite (Time-series optimization)
-Data Format: JSON (Atomic I/O)
+- Engine: Unreal Engine 5 (Blueprints, Input)
+- Language: Python 3.13 (Dataclasses, Watchdog, SQLite3)
+- Database: SQLite (Time-series optimization)
+- Data Format: JSON (Atomic I/O)
 
 ## Running Locally
 
@@ -67,54 +67,54 @@ WeatherMachine can be run locally with 3 scripts running simultaneously
 3. WeatherMachine.uproject - developer frontend
 
 ### Unreal
-Player Right Clicks - Toggles Live / Historic Mode
-    If dtwin is Live
-        Write to unreal_control.json
-            is_live = False
-            desired_id = (set by unreal but will be the current_id because you just paused)
-    If dtwin is Paused
-        Write to unreal_control.json
-            is_live = True
-Player Scrolls - determines desired_id
-    If dtwin is Paused
-        Write to unreal_control.json - desired_id
+    Player Right Clicks - Toggles Live / Historic Mode
+        If dtwin is Live (Paused the simulation)
+            Write to unreal_control.json
+                is_live = False
+                desired_id = (set by unreal but will be the current_id because you just paused)
+        If dtwin is Paused (Unpause the simulation)
+            Write to unreal_control.json
+                is_live = True
+    Player Scrolls - determines desired_id
+        If dtwin is Paused
+            Write to unreal_control.json - desired_id
 
 ### Bridge
 Operates on Event Handlers
 
-unreal_control.json - write
-    Open json and set global is_live from packet
+    EVENT (write) unreal_control.json
+        Open json and set global is_live from packet
 
-    If is_live - dtwin is live
-        If live_data is known
-            Send live_data
+        If is_live - dtwin is live
+            If live_data is known
+                Send live_data
+            Else
+                get live data from the db via WeatherRepository Class -> 
         Else
-            get live data from the db via WeatherRepository Class -> 
-    Else
-        fetch desired_id packet and pass to unreal
+            fetch desired_id packet and pass to unreal
 
-live_weather.json
-    If is_live
-        save live_data to weather_data.json
+    EVENT (write) live_weather.json
+        If is_live
+            save live_data to weather_data.json
 
 ### Harvester / Injector
 
-Creates WeatherRepo - controls r/w to db and json
-    dynamic write function for dataclasses
+    Creates WeatherRepo - controls r/w to db and json
+        dynamic write function for dataclasses
 
-Creates WeatherEngine
-    WeatherEngine.run_forever(function, interval)
-        Receives parameterized function to run at a set interval
-            harvest() or inject()
+    Creates WeatherEngine
+        WeatherEngine.run_forever(function, interval)
+            Receives parameterized function to run at a set interval
+                harvest() or inject()
 
-harvest() or inject()
-    harvest requests data from OpenWeather API
-        forms into dataclass
-    injector creates data for testing
-        forms into dataclass
-    both functions then pass packet to WeatherRepo to:
-        insert packet into SQL
-        writes packet to live_weather.json
+    harvest() or inject()
+        harvest requests data from OpenWeather API
+            forms into dataclass
+        injector creates data for testing
+            forms into dataclass
+        both functions then pass packet to WeatherRepo to:
+            insert packet into SQL
+            writes packet to live_weather.json
 
     
     
