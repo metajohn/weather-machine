@@ -63,9 +63,11 @@ class UnrealControlHandler(FileSystemEventHandler):
                     new_data = repo.export_packet_from_db(DATA_DIR, "weather_data.json", True)
                     if new_data:
                         live_data = new_data
+                    #TODO consider the following
                     #what happens here if we cannot get new data?
+                    #should we notify unreal that it has failed? or will this be resolved with the heartbeat?
             else:
-                #pause function and pass historical data
+                #pass historical data
                 target_id = data.get("desired_id", 1)
                 repo.export_packet_from_db(DATA_DIR, "weather_data.json", False, target_id)
 
@@ -87,6 +89,7 @@ class WeatherUpdateHandler(FileSystemEventHandler):
             except Exception as e:
                 print(f"Bridge: WeatherUpdateHandler: {e}")
 
+    #TODO remove debugging function
     # def on_any_event(self, event):
     #     if event.is_directory:
     #         return
@@ -98,6 +101,7 @@ class WeatherUpdateHandler(FileSystemEventHandler):
     #             # This confirms the 'Swap' is happening!
     #             print("DEBUG: Old file removed, waiting for replacement...")
 
+#cleans up temporary files created from atomic_saves
 def cleanup_temp_files_unreal():
     for filename in os.listdir(DATA_DIR):
         if filename.endswith(".tmp"):
