@@ -26,10 +26,10 @@ Developed a History-Lock protocol. When a user "scrubs" through time in the Unre
 
     1. Unreal sets a Desired_ID.
     2. The Bridge locks the state and fetches the specific database record.
-    3. Unreal confirms the Current_ID matches the Desired_ID before releasing the lock. This prevents "Ping Storms" and ensures the UI and Database are perfectly synced.
+    3. Unreal confirms the Current_ID matches the Desired_ID before releasing the lock. This allows for a responsive UI without harassing the db
 
 - **Modular Data Normalization**
-Centralized all environmental math into a unified WeatherPacket dataclass. This ensures that Live data (from the harvester) and Historical data (from the DB) are mathematically identical before hitting the 3D renderer.
+Centralized all environmental variables into a unified WeatherPacket dataclass. This supports the "single source of truth" framework.
 
 *Currently in Development*
 ## Development Roadmap
@@ -42,13 +42,80 @@ Centralized all environmental math into a unified WeatherPacket dataclass. This 
 - [x] Implement Json handshake for historical data viewing
 - [x] Implement historical data viewing
 - [x] Fix bugs with unreal json controller
+- [ ] Refactor Bridge architecture
+- [ ] Implement Health Check Utility
 - [ ] Replace basic curve controllers with cosine/sin based waves
 - [ ] Implement Weather State change
 - [ ] Add Mt. Rainier and other environment details
 
+##Long Term Development
+- [ ] Refactor json connection into TCP communication
+- [ ] Server deployment
+
 ## Tech Stack
 
-Engine: Unreal Engine 5 (Blueprints, Enhanced Input)
+Engine: Unreal Engine 5 (Blueprints, Input)
 Language: Python 3.13 (Dataclasses, Watchdog, SQLite3)
 Database: SQLite (Time-series optimization)
 Data Format: JSON (Atomic I/O)
+
+## Running Locally
+
+WeatherMachine can be run locally with 3 scripts running simultaneously
+1. Bridge.py - connects Unreal to Data
+2. Harvester.py / Injector.py - collects or fabricates data to SQL, respectively
+3. WeatherMachine.uproject - developer frontend
+
+### Unreal
+Player Right Clicks - Toggles Live / Historic Mode
+    If dtwin is Live
+        Write to unreal_control.json
+            is_live = False
+            desired_id = (set by unreal but will be the current_id because you just paused)
+    If dtwin is Paused
+        Write to unreal_control.json
+            is_live = True
+Player Scrolls - determines desired_id
+    If dtwin is Paused
+        Write to unreal_control.json - desired_id
+
+### Bridge
+Operates on Event Handlers
+
+unreal_control.json - write
+    Open json and set global is_live from packet
+
+    If is_live - dtwin is live
+        If live_data is known
+            Send live_data
+        Else
+            get live data from the db via WeatherRepository Class -> 
+    Else
+        fetch desired_id packet and pass to unreal
+
+live_weather.json
+    If is_live
+        save live_data to weather_data.json
+
+### Harvester / Injector
+
+Creates WeatherRepo - controls r/w to db and json
+    dynamic write function for dataclasses
+
+Creates WeatherEngine
+    WeatherEngine.run_forever(function, interval)
+        Receives parameterized function to run at a set interval
+            harvest() or inject()
+
+harvest() or inject()
+    harvest requests data from OpenWeather API
+        forms into dataclass
+    injector creates data for testing
+        forms into dataclass
+    both functions then pass packet to WeatherRepo to:
+        insert packet into SQL
+        writes packet to live_weather.json
+
+    
+    
+    
