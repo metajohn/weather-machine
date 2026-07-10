@@ -63,6 +63,7 @@ class UnrealControlHandler(FileSystemEventHandler):
                     new_data = repo.export_packet_from_db(DATA_DIR, "weather_data.json", True)
                     if new_data:
                         live_data = new_data
+                    #what happens here if we cannot get new data?
             else:
                 #pause function and pass historical data
                 target_id = data.get("desired_id", 1)

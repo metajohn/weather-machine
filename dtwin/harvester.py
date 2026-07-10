@@ -29,7 +29,7 @@ class HarvesterLogic():
         self.tick_rate = tick_rate
 
     def Harvest(self):
-        #harvest once gets the api data, sends it to the db AND pipes it to the bridge, seems like way too much
+        #harvest gets the api data, sends it to the db AND pipes it to the bridge, seems like way too much
         try:
             response = requests.get(self.url, timeout=10)
             response.raise_for_status()
