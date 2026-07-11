@@ -1,5 +1,5 @@
 '''
-Docstring for dtwin.harvester
+Docstring for dshadow.harvester
 Harvester is an entry point for the weather engine that calls the OpenWeather API
 it will continue doing this forever, determined by the TICK_RATE_SECONDS
 '''

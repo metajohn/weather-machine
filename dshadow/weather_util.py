@@ -8,8 +8,8 @@ from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, asdict, is_dataclass
 
 #constants for the working directory that are based entirely on the outer folder name
-DTWIN_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(os.path.join(DTWIN_DIR, ".."))
+DSHADOW_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(os.path.join(DSHADOW_DIR, ".."))
 
 #!!!!WARNING!!!!
 #schema mismatch will destroy your precious db and start from scratch
@@ -42,11 +42,11 @@ class WeatherPacket:
 
 class WeatherRepository:
     def __init__(self, db_name="weather_data.db", json_name="live_weather.json", table_name="weather_event"):
-        self.db_path = os.path.join(DTWIN_DIR, db_name)
+        self.db_path = os.path.join(DSHADOW_DIR, db_name)
         self.table_name = table_name
 
         #this is only different because the bridge runs at a higher level, the bridges location is essentially arbitrary, but so is this project
-        self.json_path = os.path.join(DTWIN_DIR, json_name)
+        self.json_path = os.path.join(DSHADOW_DIR, json_name)
         self.unreal_path = os.path.join(ROOT_DIR, "Content", "WeatherMachine", "Data")
 
         self._intialize_db()

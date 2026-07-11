@@ -13,12 +13,12 @@ from weather_util import WeatherRepository
 # If we are NOT LIVE do nothing with the live_data sit there
 
 #paths to data files
-DTWIN_DIR = os.path.dirname(os.path.realpath(__file__))
-ROOT_DIR = os.path.dirname(DTWIN_DIR)
+DSHADOW_DIR = os.path.dirname(os.path.realpath(__file__))
+ROOT_DIR = os.path.dirname(DSHADOW_DIR)
 DATA_DIR = os.path.join(ROOT_DIR, "Content", "WeatherMachine", "Data")
 DATA_PATH = os.path.join(DATA_DIR, "weather_data.json")
 CONTROL_PATH = os.path.join(DATA_DIR, "unreal_control.json")
-LIVEWEATHER_PATH = os.path.join(DTWIN_DIR, "live_weather.json")
+LIVEWEATHER_PATH = os.path.join(DSHADOW_DIR, "live_weather.json")
 
 is_live = True
 live_data = None
