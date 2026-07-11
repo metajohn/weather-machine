@@ -1,6 +1,6 @@
-# Digital Twin Test WIP
+# Digital Shadow Test WIP
 
-WeatherMachine is a Digital Twin architecture that synchronizes a Python-based environmental data pipeline with an interactive Unreal Engine 5 visualization. It simulates a professional IoT ecosystem by bridging a time-series SQLite database to a 3D environment using a custom-built, state-locked JSON middleware.
+WeatherMachine is a Digital Shadow architecture that synchronizes a Python-based environmental data pipeline with an interactive Unreal Engine 5 visualization. It simulates a professional IoT ecosystem by bridging a time-series SQLite database to a 3D environment using a custom-built, state-locked JSON middleware.
 
 ## Technical Architecture
 The system is designed as a multi-process pipeline to ensure data integrity and system stability:
@@ -68,15 +68,15 @@ WeatherMachine can be run locally with 3 scripts running simultaneously
 
 ### Unreal
     Player Right Clicks - Toggles Live / Historic Mode
-        If dtwin is Live (Paused the simulation)
+        If Live (Paused the simulation)
             Write to unreal_control.json
                 is_live = False
                 desired_id = (set by unreal but will be the current_id because you just paused)
-        If dtwin is Paused (Unpause the simulation)
+        If Paused (Unpause the simulation)
             Write to unreal_control.json
                 is_live = True
     Player Scrolls - determines desired_id
-        If dtwin is Paused
+        If Paused
             Write to unreal_control.json - desired_id
 
 ### Bridge
@@ -85,7 +85,7 @@ Operates on Event Handlers
     EVENT (write) unreal_control.json
         Open json and set global is_live from packet
 
-        If is_live - dtwin is live
+        If is_live - global to bridge
             If live_data is known
                 Send live_data
             Else
