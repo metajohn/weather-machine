@@ -19,8 +19,9 @@ namespace DShadow.Backend.Models
         public int Id { get; set; } // lol it actually guesses that this is the PK because it's called Id
 
         // Metadata / Timing Context
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // this an example of using tags instead of "Fluent API"
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // this is referenced as an example in ../Data/AppDbContext.cs as needing further configuration
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // this an example of using tags instead of "Fluent API" that is overriden in ../Data/AppDbContext.cs
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; 
+        // without further configuration, DateTime.UtcNow would technically get the datetime from the server hosting the orm NOT the SQL, we want the SQL
         public string LocationName { get; set; } = string.Empty;
         public double TimeEvent { get; set; } // Unix Epoch
         public string TimeIso { get; set; } = string.Empty;

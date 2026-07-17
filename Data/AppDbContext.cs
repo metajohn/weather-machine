@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using DShadow.Backend.Models;
-
-// Entity Framework essentially translates C# into SQL queries
-// EF needs addtional definition to establish certain implementations
-// fe. by default EF will assume that ../Models/WeatherRecord.cs -> public DateTime CreatedAt { get; set; } = DateTime.UtcNow; means...
-// "take the date from the machine that is currently running" but what we actually want is for this to be run by the SQL server itself
+/*
+ Entity Framework essentially translates C# into SQL queries
+ EF needs addtional definition to establish certain implementations
+ fe. by default EF will assume that ../Models/WeatherRecord.cs -> public DateTime CreatedAt { get; set; } = DateTime.UtcNow; means...
+ "take the date from the machine that is currently running" but what we actually want is for this to be run by the SQL server itself
+*/
 
 namespace DShadow.Backend.Data
 {
