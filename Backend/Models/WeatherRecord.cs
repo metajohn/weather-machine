@@ -1,14 +1,26 @@
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
+/* 
+for the uninitiated this is where the ORM begins to GUESS how the table should be created
+to define anything more complicated than, type, pk, etc. you have 2 options
+
+1. Tags (see CreatedAt)
+2. Fluent API (see Data/AppDbContext.cs)
+
+Fluent API overrides Tags so the tag on CreatedAt will be overriden by the lambda style assignment in Data/AppDbContext.cs
+
+*/
 namespace DShadow.Backend.Models
 {
     public class WeatherRecord
     {
         // Primary Key: Maps to INTEGER PRIMARY KEY AUTOINCREMENT
-        public int Id { get; set; }
+        public int Id { get; set; } // lol it actually guesses that this is the PK because it's called Id
 
         // Metadata / Timing Context
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // this an example of using tags instead of "Fluent API"
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // this is referenced as an example in ../Data/AppDbContext.cs as needing further configuration
         public string LocationName { get; set; } = string.Empty;
         public double TimeEvent { get; set; } // Unix Epoch
         public string TimeIso { get; set; } = string.Empty;
