@@ -35,6 +35,18 @@ FileOpenOrder/
 
 Art/
 
-#OS 
+# OS 
 .DS_Store
 Thumbs.db
+
+# .Net / C#
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Azure Functions
+local.settings.json
+.vscode/
