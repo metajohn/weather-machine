@@ -1,5 +1,6 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using DShadow.Backend.Data;
 using DShadow.Backend.Models;
@@ -38,20 +39,56 @@ namespace DShadow.Backend
 
             // Creates a response object to talk back to the client
             var response = req.CreateResponse(HttpStatusCode.OK);
+
+            WeatherRecord? dbRow = null; 
+            bool determinedIsLive = false;
             
             if (string.IsNullOrEmpty(recordId))
             {
-                // 
-                _logger.LogInformation("No ID provided. Fetching weather data fo highest ID");
+                _logger.LogInformation("No ID provided. Fetching weather data for highest ID");
 
-                await response.WriteStringAsync("Returning weather data for highest ID");
+                dbRow = await _context.WeatherRecords
+                    .OrderByDescending(w => w.Id)
+                    .FirstOrDefaultAsync();
+                determinedIsLive = true; // It's the live stream tip
             }
             else
             {
-                _logger.LogInformation($"Fetching weather data for ID: {recordId}");
+                _logger.LogInformation($"Fetching historic ID: {recordId}");
 
-                await response.WriteStringAsync($"Returning weather data for ID: {recordId}");
+                if (int.TryParse(recordId, out int id))
+                {
+                    // Find the specific row matching the ID requested by Unreal
+                    dbRow = await _context.WeatherRecords
+                        .FirstOrDefaultAsync(w => w.Id == id);
+                }
+                determinedIsLive = false; // It's an old historic frame
             }
+
+        if (dbRow == null)
+        {
+            var errorResponse = req.CreateResponse(HttpStatusCode.NotFound);
+            return errorResponse;
+        }
+
+        // Construct the actual packet payload. We map the DB columns 1:1, 
+        // but inject the dynamic 'IsLive' status that only the network layer cares about.
+        var networkPacket = new 
+        {
+            Id = dbRow.Id,
+            IsLive = determinedIsLive, // Injected dynamically because only Unreal cares about this
+            SunAlpha = dbRow.SunAlpha,
+            UpdateIntervalTime = dbRow.UpdateIntervalTime,
+            TimeIso = dbRow.TimeIso,
+            TempC = dbRow.TempC,
+            WindSpeed = dbRow.WindSpeed,
+            CloudsPercent = dbRow.CloudsPercent,
+            WeatherStateId = dbRow.WeatherStateId
+        };
+
+        // Serialize the network packet rather than the raw database entity
+        await response.WriteAsJsonAsync(networkPacket);
+
             return response;
         }
     }
