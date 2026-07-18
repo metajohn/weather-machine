@@ -23,7 +23,7 @@ namespace DShadow.Backend
 
         // Set to run every 10 minutes ("0 */10 * * * *") matching your original tick rate
         [Function("FetchLatestWeatherData")]
-        public async Task Run([TimerTrigger("0 */10 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 */1 * * * *")] TimerInfo myTimer)
         {
             _logger.LogInformation($"Harvester fired automatically at: {DateTime.Now}");
 
