@@ -19,7 +19,7 @@ void AWeatherMachineBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FetchlatestWeather();	
+	FetchLatestWeather();	
 }
 
 void AWeatherMachineBase::FetchLatestWeather()
