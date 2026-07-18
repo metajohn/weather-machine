@@ -12,7 +12,7 @@ namespace DShadow.Backend
         private readonly ILogger<WeatherHarvester> _logger;
         private static readonly HttpClient _httpClient = new HttpClient();
 
-        // 10-minute tick rate matching your TICK_RATE_SECONDS = 600
+        // 10-minute tick rate that must be assigned manually when changed
         private const double TickRateSeconds = 600.0; 
 
         public WeatherHarvester(AppDbContext context, ILoggerFactory loggerFactory)
