@@ -50,7 +50,7 @@ namespace DShadow.Backend
                 dbRow = await _context.WeatherRecords
                     .OrderByDescending(w => w.Id)
                     .FirstOrDefaultAsync();
-                determinedIsLive = true; // It's the live stream tip
+                determinedIsLive = true; // The request was for live data
             }
             else
             {
@@ -62,7 +62,7 @@ namespace DShadow.Backend
                     dbRow = await _context.WeatherRecords
                         .FirstOrDefaultAsync(w => w.Id == id);
                 }
-                determinedIsLive = false; // It's an old historic frame
+                determinedIsLive = false; // It's an old historic record
             }
 
         if (dbRow == null)
@@ -76,7 +76,7 @@ namespace DShadow.Backend
         var networkPacket = new 
         {
             Id = dbRow.Id,
-            IsLive = determinedIsLive, // Injected dynamically because only Unreal cares about this
+            bIsLive = determinedIsLive, // Injected dynamically because only Unreal cares about this
             SunAlpha = dbRow.SunAlpha,
             UpdateIntervalTime = dbRow.UpdateIntervalTime,
             TimeIso = dbRow.TimeIso,
