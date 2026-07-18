@@ -16,13 +16,10 @@ struct FWeatherPacket
 	int32 Id = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
-	bool bIsLive = false;
+	bool IsLive = false;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weather Data")
 	float SunAlpha = 0.0f;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
-	float UpdateSpeed = 0.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
 	FString TimeIso = "";
@@ -30,22 +27,26 @@ struct FWeatherPacket
 	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
 	float TempC = 0.0f;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weather Data")
 	float WindSpeed = 0.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
 	int32 CloudsPercent = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
-	int32 WeatherState = 0;
+	int32 WeatherStateId = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
+	float UpdateIntervalTime = 0.0f;
+
 };
 
 UCLASS()
 class WEATHERMACHINE_API AWeatherMachineBase : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AWeatherMachineBase();
 
@@ -53,20 +54,46 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Control Data")
 	bool bIsLive;
-	int32 HighestId;
-	int32 HistoricIdRequested;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
+	int32 HighestId = 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
+	int32 HistoricIdRequested = 1;
 
 	UFUNCTION(BlueprintCallable, Category = "Weather Network")
-	void FetchLatestWeather();
+	void FetchWeather(int32 TargetId = 0);
 
 	void OnWeatherResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
+	FWeatherPacket LastWeatherPacket;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
 	FWeatherPacket CurrentWeather;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
 	FWeatherPacket HistoricalWeather;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
+	FWeatherPacket TargetWeather;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Weather Data|UI")
+	void OnTargetWeatherChanged(const FWeatherPacket& NewTargetWeather);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weather Data")
+	FWeatherPacket DisplayWeather;
+
+	UFUNCTION(BlueprintCallable, Category = "Weather Machine")
+	void ToggleIsLive();
+
+	void SetLiveState(bool bWantsToBeLive);
+
+	UFUNCTION(BlueprintCallable, Category = "Weather Machine")
+	void ShiftHistoricId(int32 IdDelta);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
