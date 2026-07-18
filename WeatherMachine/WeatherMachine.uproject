@@ -3,6 +3,16 @@
 	"EngineAssociation": "{CE3F6E07-4ACC-31DB-5081-42A19848977D}",
 	"Category": "",
 	"Description": "",
+	"Modules": [
+		{
+			"Name": "WeatherMachine",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		}
+	],
 	"Plugins": [
 		{
 			"Name": "ModelingToolsEditorMode",

@@ -53,3 +53,11 @@ local.settings.json
 
 # local tools
 .tools/
+
+# Visual Studio files
+.vs/
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
