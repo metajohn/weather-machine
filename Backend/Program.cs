@@ -10,6 +10,10 @@ using OpenTelemetry;
 using Microsoft.EntityFrameworkCore;
 using DShadow.Backend.Data;
 
+/*
+Program.cs is normally the entry point to a standard .NET app
+*/
+
 // boilerplate
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -17,6 +21,7 @@ var builder = FunctionsApplication.CreateBuilder(args);
 builder.ConfigureFunctionsWebApplication();
 
 // connectind to a local SQLite server for testing
+// builder.Services.AddDbContext<AppDbContext> allows for dependency injection of this AppDbConxtext class ANYWHERE in the project
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=app.db"));
 
