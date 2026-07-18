@@ -1,8 +1,27 @@
 # Digital Shadow Test WIP
 
-WeatherMachine is a Digital Shadow architecture that synchronizes a Python-based environmental data pipeline with an interactive Unreal Engine 5 visualization. It simulates a professional IoT ecosystem by bridging a time-series SQLite database to a 3D environment using a custom-built, state-locked JSON middleware.
+WeatherMachine was a Digital Shadow architecture that synchronized a Python-based environmental data pipeline with an interactive Unreal Engine 5 visualization. It simulates a professional IoT ecosystem by bridging a time-series SQLite database to a 3D environment using a custom-built, state-locked JSON middleware.
 
-## Technical Architecture
+It is currently being re-written into a networked version.
+
+## .NET Transition
+The local prototype, described below, is currently being revised to exist over the network.
+
+- db -> Azure hosted SQL
+- FrontEnd -> Unreal
+- Diagnostic View -> Static React Page
+- Data Orchestrator -> .NET Azure Functions (AF)
+
+## Orchestration
+.NET functions allow Unreal to receive data from the db
+- Unreal has 2 cached structs 1. Live 2. Historic
+- AF wakes on timer to pull the API data from OpenWeather every x amount of time
+- AF pushes this data to the Unreal client regardless of what Unreal is doing
+- Unreal can request specific ID's for historic data from AF, and AF does not need to keep track of state 
+
+# Local Prototype
+
+## Local Technical Architecture
 The system is designed as a multi-process pipeline to ensure data integrity and system stability:
 
 - **Data Injection** A Python-based "Pulse" script that simulates complex environmental telemetry (Temp, Wind, Solar Alpha) and logs them to a time-series SQLite database.
