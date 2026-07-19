@@ -26,7 +26,7 @@ void AWeatherMachineBase::BeginPlay()
 
 void AWeatherMachineBase::FetchWeather(int32 TargetId)
 {
-	FString BaseURL = TEXT("http://localhost:7071/api/weather");
+	FString BaseURL = TEXT("http://localhost:7071/api/weather"); // temporary to local testing
 
 	if (TargetId > 0)
 	{
@@ -108,7 +108,9 @@ void AWeatherMachineBase::OnWeatherResponseReceived(FHttpRequestPtr Request, FHt
 				UE_LOG(LogTemp, Log, TEXT("SunAlpha on TargetWeather %.4f"), TargetWeather.SunAlpha)
 				UE_LOG(LogTemp, Log, TEXT("CurrentWeather Updated, set Highest Id - Highest Id: %d"), HighestId);
 				HighestId = LastWeatherPacket.Id;
-				HistoricIdRequested = HighestId;
+				HistoricIdCurrent = HighestId;
+				HistoricIdRequested = HistoricIdCurrent;
+				OnHistoricIdRequest(HistoricIdRequested);
 			}
 
 		}
@@ -117,6 +119,7 @@ void AWeatherMachineBase::OnWeatherResponseReceived(FHttpRequestPtr Request, FHt
 			UE_LOG(LogTemp, Log, TEXT("Processing historic data packet for Id %d."), LastWeatherPacket.Id)
 			HistoricalWeather = LastWeatherPacket;
 			TargetWeather = HistoricalWeather;
+			HistoricIdCurrent = HistoricIdRequested;
 			OnTargetWeatherChanged(TargetWeather);
 		}
 	}
@@ -140,10 +143,12 @@ void AWeatherMachineBase::SetLiveState(bool bWantsToBeLive)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Weather Machine: Switched to LIVE streaming. Resuming updates."));
 		FetchWeather();
+		OnToggleIsLive(bIsLive);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Weather Machine: PAUSED live streaming. Clearing active timers."));
+		OnToggleIsLive(bIsLive);
 		// Clear the timer so no more background loops fire while paused
 		/*GetWorldTimerManager().ClearTimer(WeatherTimerHandle);*/
 	}
@@ -160,21 +165,37 @@ void AWeatherMachineBase::ShiftHistoricId(int32 IdDelta)
 
 	if (TargetId < 1)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Shift Historic Frame tried to go below 1"));
 		TargetId = 1;
 	}
 	else if (TargetId > HighestId)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Shift Historic Frame tried to go above highest value"));
 		TargetId = HighestId;
 	}
 	UE_LOG(LogTemp, Log, TEXT("Processing frame shift"));
 	if (TargetId != HistoricIdRequested)
 	{
 		HistoricIdRequested = TargetId;
+		OnHistoricIdRequest(HistoricIdRequested);
 
-		UE_LOG(LogTemp, Log, TEXT("Requested ID changed to: %d. Fetching Historic Record"), TargetId);
-		FetchWeather(TargetId);
+		GetWorldTimerManager().ClearTimer(NetworkDebounceTimerHandle);
+
+		// debounce the network request.
+		GetWorldTimerManager().SetTimer(
+			NetworkDebounceTimerHandle,
+			this,
+			&AWeatherMachineBase::TriggerActualNetworkRequest,
+			0.5f, // Delay in seconds (500ms)
+			false  // Do NOT loop
+		);
+	}
+}
+
+void AWeatherMachineBase::TriggerActualNetworkRequest()
+{
+	if(!bIsLive)
+	{
+		FetchWeather(HistoricIdRequested);
+		UE_LOG(LogTemp, Log, TEXT("Requested ID changed to: %d. Fetching Historic Record"), HistoricIdRequested);
 	}
 }
 

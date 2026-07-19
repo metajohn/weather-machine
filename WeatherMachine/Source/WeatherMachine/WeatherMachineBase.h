@@ -57,11 +57,20 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Control Data")
 	bool bIsLive;
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Weather Data|UI")
+	void OnToggleIsLive(bool bIsLiveState);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
 	int32 HighestId = 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
 	int32 HistoricIdRequested = 1;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Weather Data|UI")
+	void OnHistoricIdRequest(int32 NewHistoricIdRequested);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
+	int32 HistoricIdCurrent = 1;
 
 	UFUNCTION(BlueprintCallable, Category = "Weather Network")
 	void FetchWeather(int32 TargetId = 0);
@@ -93,6 +102,10 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Weather Machine")
 	void ShiftHistoricId(int32 IdDelta);
+
+	FTimerHandle NetworkDebounceTimerHandle;
+
+	void TriggerActualNetworkRequest();
 
 public:	
 	// Called every frame
