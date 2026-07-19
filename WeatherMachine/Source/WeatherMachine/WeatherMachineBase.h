@@ -16,7 +16,7 @@ struct FWeatherPacket
 	int32 Id = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Weather Data")
-	bool IsLive = false;
+	bool IsLive = false; // intentionally not bIsLive because it differentiates between unreal setting the state and it must share the naming with the C# DTO
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weather Data")
 	float SunAlpha = 0.0f;
@@ -57,8 +57,29 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Control Data")
 	bool bIsLive;
 
+	// Deprecated goofy handling of polling
+	bool bIsColdStart = true;
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Weather Data|UI")
 	void OnToggleIsLive(bool bIsLiveState);
+
+	FTimerHandle ServerPollingTimerHandle;
+	FTimerHandle ConnectionCheckTimerHandle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weather Data|Network", meta = (ClampMin = "1.0"))
+	float PollingIntervalLive = 5.0f; // Default, also updated from the packet itself
+
+	int32 ServerConnectionMaxRetries = 3;
+	int32 ServerConnectionCurrentRetries = 3;
+
+	// How fast to retry after a failure to get newest data.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weather Data|Network")
+	float PacketRetryInterval = 3.3f;
+
+	// Schedules the delay between polling for live packets
+	void ScheduleNextWeatherCheckLive();
+
+	void StartConnectionCheck();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather Data")
 	int32 HighestId = 1;
@@ -96,8 +117,6 @@ protected:
 	FWeatherPacket DisplayWeather;
 
 	UFUNCTION(BlueprintCallable, Category = "Weather Machine")
-	void ToggleIsLive();
-
 	void SetLiveState(bool bWantsToBeLive);
 
 	UFUNCTION(BlueprintCallable, Category = "Weather Machine")
@@ -105,7 +124,7 @@ protected:
 
 	FTimerHandle NetworkDebounceTimerHandle;
 
-	void TriggerActualNetworkRequest();
+	void TriggerHistoricNetworkRequest();
 
 public:	
 	// Called every frame

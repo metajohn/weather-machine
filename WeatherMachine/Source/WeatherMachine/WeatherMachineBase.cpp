@@ -21,21 +21,60 @@ void AWeatherMachineBase::BeginPlay()
 	Super::BeginPlay();
 
 	SetLiveState(true);
-	FetchWeather();	
+	FetchWeather();
+}
+
+void AWeatherMachineBase::ScheduleNextWeatherCheckLive()
+{
+	GetWorldTimerManager().ClearTimer(ServerPollingTimerHandle);
+
+	GetWorldTimerManager().SetTimer(
+		ServerPollingTimerHandle,
+		[this]()
+		{
+			this->FetchWeather();
+		},
+		PollingIntervalLive,
+		false // technically this could be true because it should always be running
+	);
+}
+
+void AWeatherMachineBase::StartConnectionCheck()
+{
+	if (ServerConnectionCurrentRetries <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Connection To Server Lost"));
+		return;
+	}
+	ServerConnectionCurrentRetries--;
+	UE_LOG(LogTemp, Error, TEXT("Checking Connection to Server, %d Attempts remain"), ServerConnectionCurrentRetries);
+	GetWorldTimerManager().ClearTimer(ConnectionCheckTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		ConnectionCheckTimerHandle,
+		[this]()
+		{
+			this->FetchWeather();
+		},
+		PacketRetryInterval,
+		false
+	);
 }
 
 void AWeatherMachineBase::FetchWeather(int32 TargetId)
 {
 	FString BaseURL = TEXT("http://localhost:7071/api/weather"); // temporary to local testing
 
+	// TODO complete testing and implementation of implicit TargetId, to allow timers to retry
 	if (TargetId > 0)
 	{
+		TargetId = HistoricIdRequested;
 		BaseURL = FString::Printf(TEXT("%s?id=%d"), *BaseURL, TargetId);
 
 		UE_LOG(LogTemp, Log, TEXT("FetchWeather: Requesting historic frame ID: %d"), TargetId);
 	}
 	else
 	{
+		TargetId = 0;
 		UE_LOG(LogTemp, Log, TEXT("FetchWeather: Requesting latest live weather data..."));
 	}
 
@@ -97,25 +136,47 @@ void AWeatherMachineBase::OnWeatherResponseReceived(FHttpRequestPtr Request, FHt
 		if (LastWeatherPacket.IsLive)
 		{
 			UE_LOG(LogTemp, Log, TEXT("Processing live data packet for Id: %d"), LastWeatherPacket.Id);
-			CurrentWeather = LastWeatherPacket;
-			UE_LOG(LogTemp, Log, TEXT("SunAlpha on CurrentWeather %.4f"), CurrentWeather.SunAlpha)
 
-
-			if (bIsLive)
+			// we received a live packet that is not new
+			if (CurrentWeather.Id >= LastWeatherPacket.Id && CurrentWeather.Id != 0) // CurrentWeather.Id != is our cold start boolean check
 			{
-				TargetWeather = CurrentWeather;
-				OnTargetWeatherChanged(TargetWeather);
-				UE_LOG(LogTemp, Log, TEXT("SunAlpha on TargetWeather %.4f"), TargetWeather.SunAlpha)
-				UE_LOG(LogTemp, Log, TEXT("CurrentWeather Updated, set Highest Id - Highest Id: %d"), HighestId);
-				HighestId = LastWeatherPacket.Id;
-				HistoricIdCurrent = HighestId;
-				HistoricIdRequested = HistoricIdCurrent;
-				OnHistoricIdRequest(HistoricIdRequested);
+				// if their isnt a current connection check start a new one
+				if (!ConnectionCheckTimerHandle.IsValid())
+				{
+					ServerConnectionCurrentRetries = ServerConnectionMaxRetries;
+					StartConnectionCheck();
+				}
 			}
+			// we received a fresh live packet
+			else
+			{
+				ConnectionCheckTimerHandle.Invalidate();
 
+				CurrentWeather = LastWeatherPacket;
+				UE_LOG(LogTemp, Log, TEXT("LiveWeather Updated, set Highest Id - Highest Id: %d"), HighestId);
+				HighestId = LastWeatherPacket.Id;
+
+				// we are live, update with the fresh packet
+				if (bIsLive)
+				{
+					TargetWeather = CurrentWeather;
+					UE_LOG(LogTemp, Log, TEXT("SunAlpha on TargetWeather %.4f"), TargetWeather.SunAlpha)
+					HistoricIdCurrent = HighestId;
+					HistoricIdRequested = HistoricIdCurrent;
+					OnHistoricIdRequest(HistoricIdRequested);
+					OnTargetWeatherChanged(TargetWeather);
+				}
+
+				// TODO update this time to reflect an estimate of when we expect the next packet instead of the flat value
+				PollingIntervalLive = CurrentWeather.UpdateIntervalTime;
+				ScheduleNextWeatherCheckLive();
+			}
 		}
+		// we are historic and we got the packet we wanted
 		else if (!LastWeatherPacket.IsLive && LastWeatherPacket.Id == HistoricIdRequested)
 		{
+			ConnectionCheckTimerHandle.Invalidate();
+
 			UE_LOG(LogTemp, Log, TEXT("Processing historic data packet for Id %d."), LastWeatherPacket.Id)
 			HistoricalWeather = LastWeatherPacket;
 			TargetWeather = HistoricalWeather;
@@ -126,13 +187,8 @@ void AWeatherMachineBase::OnWeatherResponseReceived(FHttpRequestPtr Request, FHt
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to parse JSON string into FWeatherPacket struct. Schema mismatch"));
+		return;
 	}
-}
-
-void AWeatherMachineBase::ToggleIsLive()
-{
-	SetLiveState(!bIsLive);
-	
 }
 
 void AWeatherMachineBase::SetLiveState(bool bWantsToBeLive)
@@ -141,16 +197,20 @@ void AWeatherMachineBase::SetLiveState(bool bWantsToBeLive)
 
 	if (bIsLive)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Weather Machine: Switched to LIVE streaming. Resuming updates."));
-		FetchWeather();
+		UE_LOG(LogTemp, Log, TEXT("Weather Machine: LIVE"));
 		OnToggleIsLive(bIsLive);
+
+		// set TargetWeather to cached CurrentWeather
+		TargetWeather = CurrentWeather;
+		HistoricIdCurrent = CurrentWeather.Id;
+		HistoricIdRequested = HistoricIdCurrent;
+		OnHistoricIdRequest(HistoricIdRequested);
+		OnTargetWeatherChanged(TargetWeather);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Weather Machine: PAUSED live streaming. Clearing active timers."));
+		UE_LOG(LogTemp, Warning, TEXT("Weather Machine: HISTORIC"));
 		OnToggleIsLive(bIsLive);
-		// Clear the timer so no more background loops fire while paused
-		/*GetWorldTimerManager().ClearTimer(WeatherTimerHandle);*/
 	}
 }
 
@@ -183,19 +243,25 @@ void AWeatherMachineBase::ShiftHistoricId(int32 IdDelta)
 		GetWorldTimerManager().SetTimer(
 			NetworkDebounceTimerHandle,
 			this,
-			&AWeatherMachineBase::TriggerActualNetworkRequest,
+			&AWeatherMachineBase::TriggerHistoricNetworkRequest,
 			0.5f, // Delay in seconds (500ms)
 			false  // Do NOT loop
 		);
 	}
 }
 
-void AWeatherMachineBase::TriggerActualNetworkRequest()
+void AWeatherMachineBase::TriggerHistoricNetworkRequest()
 {
 	if(!bIsLive)
 	{
 		FetchWeather(HistoricIdRequested);
 		UE_LOG(LogTemp, Log, TEXT("Requested ID changed to: %d. Fetching Historic Record"), HistoricIdRequested);
+
+		if (!ConnectionCheckTimerHandle.IsValid())
+		{
+			ServerConnectionCurrentRetries = ServerConnectionMaxRetries;
+			StartConnectionCheck();
+		}
 	}
 }
 
