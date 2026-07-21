@@ -24,8 +24,42 @@ void AWeatherMachineBase::BeginPlay()
 	FetchWeather();
 }
 
-void AWeatherMachineBase::ScheduleNextWeatherCheckLive()
+float AWeatherMachineBase::CalculateSecondsUntilNextServerUpdate(const FString& ServerTimeIso, const float UpdateInterval)
 {
+	FDateTime ServerTime = FDateTime::ParseIso8601(*ServerTimeIso, ServerTime);
+
+	UE_LOG(LogTemp, Log, TEXT("Received Server Time ISO %s from last live update."), *ServerTimeIso);
+
+	// If parsing fails, fall back to the raw UpdateInterval provided by the server
+	if (ServerTime == FDateTime::MinValue())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to parse ISO string: %s. Falling back to UpdateInterval."), *ServerTimeIso);
+		return UpdateInterval;
+	}
+
+	// 2. Calculate next expected update using the server's UpdateInterval (in seconds)
+	FDateTime NextExpectedUpdate = ServerTime + FTimespan::FromSeconds(UpdateInterval);
+
+	// 3. Compare against current client UTC time
+	FDateTime CurrentUtcTime = FDateTime::UtcNow();
+	FTimespan TimeRemaining = NextExpectedUpdate - CurrentUtcTime;
+
+	float RemainingSeconds = TimeRemaining.GetTotalSeconds();
+
+	// Add a 5-second buffer to ensure the Azure job finishes writing before we check
+	float BufferSeconds = 5.0f;
+	float FinalInterval = RemainingSeconds + BufferSeconds;
+
+
+	
+	// If the expected time has already passed, return the standard wait time
+	return (FinalInterval > 0.0f) ? FinalInterval : UpdateInterval;
+}
+
+void AWeatherMachineBase::ScheduleNextWeatherCheckLive(const float SecondsTillNextExpected)
+{
+	UE_LOG(LogTemp, Log, TEXT("Next Weather Check Scheduled in  %f seconds."), SecondsTillNextExpected);
+
 	GetWorldTimerManager().ClearTimer(ServerPollingTimerHandle);
 
 	GetWorldTimerManager().SetTimer(
@@ -34,8 +68,8 @@ void AWeatherMachineBase::ScheduleNextWeatherCheckLive()
 		{
 			this->FetchWeather();
 		},
-		PollingIntervalLive,
-		false // technically this could be true because it should always be running
+		SecondsTillNextExpected,
+		false
 	);
 }
 
@@ -122,6 +156,7 @@ void AWeatherMachineBase::OnWeatherResponseReceived(FHttpRequestPtr Request, FHt
 		//	UE_LOG(LogTemp, Log, TEXT("   WEATHER STRUCT VALIDATION READOUT"));
 		//	UE_LOG(LogTemp, Log, TEXT("=================================================="));
 		//	UE_LOG(LogTemp, Log, TEXT("Id:                     %d"), LastWeatherPacket.Id);
+		//	UE_LOG(LogTemp, Log, TEXT("ServerTimestampIso:     %.2f"), LastWeatherPacket.ServerTimestampIso);
 		//	UE_LOG(LogTemp, Log, TEXT("bIsLive:                %s"), LastWeatherPacket.IsLive ? TEXT("True") : TEXT("False"));
 		//	UE_LOG(LogTemp, Log, TEXT("SunAlpha:               %.4f"), LastWeatherPacket.SunAlpha);
 		//	UE_LOG(LogTemp, Log, TEXT("UpdateIntervalTime:     %.2f"), LastWeatherPacket.UpdateIntervalTime);
@@ -150,7 +185,7 @@ void AWeatherMachineBase::OnWeatherResponseReceived(FHttpRequestPtr Request, FHt
 			// we received a fresh live packet
 			else
 			{
-				ConnectionCheckTimerHandle.Invalidate();
+				GetWorldTimerManager().ClearTimer(ConnectionCheckTimerHandle);
 
 				CurrentWeather = LastWeatherPacket;
 				UE_LOG(LogTemp, Log, TEXT("LiveWeather Updated, set Highest Id - Highest Id: %d"), HighestId);
@@ -167,15 +202,14 @@ void AWeatherMachineBase::OnWeatherResponseReceived(FHttpRequestPtr Request, FHt
 					OnTargetWeatherChanged(TargetWeather);
 				}
 
-				// TODO update this time to reflect an estimate of when we expect the next packet instead of the flat value
-				PollingIntervalLive = CurrentWeather.UpdateIntervalTime;
-				ScheduleNextWeatherCheckLive();
+				float TimeTillNextUpdate = CalculateSecondsUntilNextServerUpdate(CurrentWeather.ServerTimestampIso, CurrentWeather.UpdateIntervalTime);
+				ScheduleNextWeatherCheckLive(TimeTillNextUpdate);
 			}
 		}
 		// we are historic and we got the packet we wanted
 		else if (!LastWeatherPacket.IsLive && LastWeatherPacket.Id == HistoricIdRequested)
 		{
-			ConnectionCheckTimerHandle.Invalidate();
+			GetWorldTimerManager().ClearTimer(ConnectionCheckTimerHandle);
 
 			UE_LOG(LogTemp, Log, TEXT("Processing historic data packet for Id %d."), LastWeatherPacket.Id)
 			HistoricalWeather = LastWeatherPacket;
@@ -244,7 +278,7 @@ void AWeatherMachineBase::ShiftHistoricId(int32 IdDelta)
 			NetworkDebounceTimerHandle,
 			this,
 			&AWeatherMachineBase::TriggerHistoricNetworkRequest,
-			0.5f, // Delay in seconds (500ms)
+			0.2f, // Delay in seconds (500ms)
 			false  // Do NOT loop
 		);
 	}

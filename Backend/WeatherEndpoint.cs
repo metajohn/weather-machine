@@ -76,6 +76,7 @@ namespace DShadow.Backend
         var networkPacket = new 
         {
             Id = dbRow.Id,
+            ServerTimestampIso = dbRow.CreatedAt.ToString("o"),
             IsLive = determinedIsLive, // Injected dynamically because only Unreal cares about this
             SunAlpha = dbRow.SunAlpha,
             UpdateIntervalTime = dbRow.UpdateIntervalTime,
