@@ -43,7 +43,7 @@ namespace DShadow.Backend.Models
 
         // Weather State
         public string Description { get; set; } = string.Empty;
-        public int WeatherStateId { get; set; } // 0=Clear, 1=Cloudy, 2=Rain, etc.
+        public int WeatherStateId { get; set; } // 0=Clear, 1=Cloudy, 2=Rain, 3=Snow, 4=Storm
         public double Rain1h { get; set; }
         public double Snow1h { get; set; }
 
