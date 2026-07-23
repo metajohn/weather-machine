@@ -4,7 +4,10 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: 
+    paths:
+      - 'backend/**'           # trigger when backend changes
+      - '.github/workflows/**' # trigger when workflow changes
+  workflow_dispatch:           # trigger on manual deployment
 
 env:
   AZURE_FUNCTIONAPP_NAME: 'weather-machine-api'
