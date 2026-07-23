@@ -3,6 +3,7 @@ using System;
 using DShadow.Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -11,79 +12,85 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DShadow.Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260718035126_InitialCreate")]
+    [Migration("20260723020936_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("DShadow.Backend.Models.WeatherRecord", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("CloudsPercent")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime2")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Humidity")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<string>("LocationName")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<double>("Rain1h")
-                        .HasColumnType("REAL");
+                        .HasColumnType("float");
 
                     b.Property<double>("Snow1h")
-                        .HasColumnType("REAL");
+                        .HasColumnType("float");
 
                     b.Property<double>("SunAlpha")
-                        .HasColumnType("REAL");
+                        .HasColumnType("float");
 
                     b.Property<double>("TempC")
-                        .HasColumnType("REAL");
+                        .HasColumnType("float");
 
                     b.Property<double>("TimeEvent")
-                        .HasColumnType("REAL");
+                        .HasColumnType("float");
 
                     b.Property<string>("TimeIso")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("TimezoneOffset")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<double>("UpdateIntervalTime")
-                        .HasColumnType("REAL");
+                        .HasColumnType("float");
 
                     b.Property<int>("Visibility")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int>("WeatherStateId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<double>("WindSpeed")
-                        .HasColumnType("REAL");
+                        .HasColumnType("float");
 
                     b.Property<double>("WindX")
-                        .HasColumnType("REAL");
+                        .HasColumnType("float");
 
                     b.Property<double>("WindY")
-                        .HasColumnType("REAL");
+                        .HasColumnType("float");
 
                     b.HasKey("Id");
 
