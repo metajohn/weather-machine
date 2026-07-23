@@ -1,0 +1,39 @@
+name: Build and Deploy C# Azure Function App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: 
+
+env:
+  AZURE_FUNCTIONAPP_NAME: 'weather-machine-api'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './Backend'               
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout GitHub Repository'
+        uses: actions/checkout@v4
+
+      - name: 'Setup .NET Environment'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: 'Restore and Build Project'
+        shell: bash
+        run: |
+          pushd '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet restore
+          dotnet build --configuration Release --output ./output
+          popd
+
+      - name: 'Deploy to Azure Functions'
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
