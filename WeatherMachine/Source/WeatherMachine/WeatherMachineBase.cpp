@@ -6,6 +6,7 @@
 #include "Interfaces/IHttpResponse.h"
 #include "JsonUtilities.h"
 #include "Net/UnrealNetwork.h"
+#include "HAL/PlatformMisc.h"
 
 // Sets default values
 AWeatherMachineBase::AWeatherMachineBase()
@@ -96,13 +97,25 @@ void AWeatherMachineBase::StartConnectionCheck()
 
 void AWeatherMachineBase::FetchWeather(int32 TargetId)
 {
-	FString BaseURL = TEXT("http://localhost:7071/api/weather"); // temporary to local testing
+	/*FString BaseURL = TEXT("http://localhost:7071/api/weather");*/ // temporary to local testing
+	FString BaseUrl = FPlatformMisc::GetEnvironmentVariable(TEXT("AZURE_WEATHERMACHINE_URL"));
+	FString FunctionKey = FPlatformMisc::GetEnvironmentVariable(TEXT("AZURE_GETWEATHER_KEY"));
+
+	if (BaseUrl.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("AZURE_WEATHERMACHINE_URL env var is not set!"));
+		return;
+	}
+	if (FunctionKey.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("AZURE_FUNCTION_KEY env var is not set"));
+	}
 
 	// TODO complete testing and implementation of implicit TargetId, to allow timers to retry
 	if (TargetId > 0)
 	{
 		TargetId = HistoricIdRequested;
-		BaseURL = FString::Printf(TEXT("%s?id=%d"), *BaseURL, TargetId);
+		BaseUrl = FString::Printf(TEXT("%s?id=%d"), *BaseUrl, TargetId);
 
 		UE_LOG(LogTemp, Log, TEXT("FetchWeather: Requesting historic frame ID: %d"), TargetId);
 	}
@@ -119,10 +132,11 @@ void AWeatherMachineBase::FetchWeather(int32 TargetId)
 	Request->OnProcessRequestComplete().BindUObject(this, &AWeatherMachineBase::OnWeatherResponseReceived);
 
 	// Define request members
-	Request->SetURL(BaseURL);
+	Request->SetURL(BaseUrl);
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("User-Agent"), TEXT("X-UnrealEngine-Agent"));
 	Request->SetHeader(TEXT("Accept"), TEXT("application/json"));
+	Request->SetHeader(TEXT("x-functions-key"), FunctionKey);
 
 	// Send Request
 	Request->ProcessRequest();
