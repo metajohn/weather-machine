@@ -29,10 +29,22 @@ Getting the local server to run properly was a minor pain and involved several s
 4. Migrations folder with an initial schema - dotnet ef migrations add <Name>
 5. Update the db - dotnet ef database update
 */
+
+string? connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
+
 // builder.Services.AddDbContext<AppDbContext> allows for dependency injection of this AppDbConxtext class ANYWHERE in the project
 builder.Services.AddDbContext<AppDbContext>((context, options) =>
 {
-    options.UseSqlite(@"Data Source=G:\A_Projects\DShadow\Backend\weather.db");
+if (!string.IsNullOrEmpty(connectionString))
+    {
+        // Live Azure SQL / Managed Identity Connection
+        options.UseSqlServer(connectionString);
+    }
+    else
+    {
+        // Fallback to local SQLite for offline dev testing if no Azure string is set
+        options.UseSqlite(@"Data Source=G:\A_Projects\DShadow\Backend\weather.db");
+    }
 });
     
 
