@@ -13,7 +13,7 @@ namespace DShadow.Backend
         private static readonly HttpClient _httpClient = new HttpClient();
 
         // 1 hr tick rate that must be assigned manually when changed
-        private const double TickRateSeconds = 600.0; 
+        private const double TickRateSeconds = 3600.0; 
 
         public WeatherHarvester(AppDbContext context, ILoggerFactory loggerFactory)
         {
@@ -21,9 +21,9 @@ namespace DShadow.Backend
             _logger = loggerFactory.CreateLogger<WeatherHarvester>();
         }
 
-        // Set to run every 10 minutes ("0 */10 * * * *")
+        // 10 minutes ("0 */10 * * * *") - 1hr ("0 0 * * * *")
         [Function("FetchLatestWeatherData")]
-        public async Task Run([TimerTrigger("0 */10 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 0 * * * *")] TimerInfo myTimer)
         {
             _logger.LogInformation($"Harvester fired automatically at: {DateTime.Now}");
 
