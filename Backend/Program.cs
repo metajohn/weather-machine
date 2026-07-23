@@ -5,6 +5,7 @@ using Microsoft.Azure.Functions.Worker.OpenTelemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Data.SqlClient;
 using System.IO;
 using OpenTelemetry;
 
@@ -41,17 +42,30 @@ var config = new ConfigurationBuilder()
 // read from local.settings.json first otherwise check the env vars
 string? connectionString = config["Values:SqlConnectionString"] ?? Environment.GetEnvironmentVariable("SqlConnectionString");
 
-Console.WriteLine($"[EF DEBUG] ConnectionString is: '{(string.IsNullOrEmpty(connectionString) ? "NULL OR EMPTY" : connectionString)}'");
+// add timeout to the connection string to avoid the long (1-2 minute) wake time on the db
+string finalConnectionString = string.Empty;
+
+if (!string.IsNullOrEmpty(connectionString))
+{
+    var sqlBuilder = new SqlConnectionStringBuilder(connectionString)
+    {
+        ConnectTimeout = 120
+    };
+    finalConnectionString = sqlBuilder.ConnectionString;
+}
+
+Console.WriteLine($"[EF DEBUG] ConnectionString is: '{(string.IsNullOrEmpty(finalConnectionString) ? "NULL OR EMPTY" : finalConnectionString)}'");
 
 // builder.Services.AddDbContext<AppDbContext> allows for dependency injection of this AppDbConxtext class ANYWHERE in the project
 builder.Services.AddDbContext<AppDbContext>((context, options) =>
 {
-if (!string.IsNullOrEmpty(connectionString))
+if (!string.IsNullOrEmpty(finalConnectionString))
     {
         // Live Azure SQL / Managed Identity Connection
         Console.WriteLine("[EF DEBUG] Configured UseSqlServer.");
-        options.UseSqlServer(connectionString, sqlOptions =>
+        options.UseSqlServer(finalConnectionString, sqlOptions =>
         {
+            sqlOptions.CommandTimeout(120);
             // Automatically retries failed commands if Azure SQL drops the connection
             sqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 5,
@@ -66,9 +80,6 @@ if (!string.IsNullOrEmpty(connectionString))
         options.UseSqlite(@"Data Source=G:\A_Projects\DShadow\Backend\weather.db");
     }
 });
-    
-
-
 
 // boilerplate
 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")))
