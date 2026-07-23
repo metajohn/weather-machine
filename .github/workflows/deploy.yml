@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'backend/**'           # trigger when backend changes
+      - 'Backend/**'           # trigger when backend changes
       - '.github/workflows/**' # trigger when workflow changes
   workflow_dispatch:           # trigger on manual deployment
 
