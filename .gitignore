@@ -50,6 +50,7 @@ obj/
 # Azure Functions
 local.settings.json
 .vscode/
+.tools/
 
 # local tools
 .tools/
